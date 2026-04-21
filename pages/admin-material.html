@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Almacén - Admin</title>
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    .nav-container {
+      margin: 10px 0 20px 0;
+    }
+    .nav-btn {
+      background: #eee;
+      border: 1px solid #ccc;
+      padding: 6px 12px;
+      margin-right: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>AMPAgo</header>
+
+<div class="container">
+
+  <!-- Botones de navegación debajo del título -->
+  <div class="nav-container">
+    <button id="btnVolver" class="nav-btn">Volver</button>
+    <button id="btnInicio" class="nav-btn">Inicio</button>
+  </div>
+
+  <h2>Gestión de materiales</h2>
+
+  <button onclick="location.href='materiales-form.html'">Crear material</button>
+  <button onclick="location.href='movimientos.html'">Ver movimientos</button>
+  <button id="logoutBtn">Cerrar sesión</button>
+
+  <h3>Listado de materiales</h3>
+
+  <table id="tablaMateriales">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Stock</th>
+        <th>Unidad</th>
+        <th>Categoría</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+</div>
+
+<script type="module">
+import { supabase, logout } from "../js/supabaseclientes.js";
+
+/* ================= NAVEGACIÓN UNIVERSAL ================= */
+async function navegar() {
+  const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+  if (esInvitado) {
+    location.href = "invitado.html";
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    location.href = "login.html";
+    return;
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  switch (profile?.role) {
+    case "admin": location.href = "admin.html"; break;
+    case "monitor": location.href = "monitor.html"; break;
+    case "familiar": location.href = "familiar.html"; break;
+    default: location.href = "login.html";
+  }
+}
+
+document.getElementById("btnVolver").onclick = navegar;
+document.getElementById("btnInicio").onclick = navegar;
+
+/* ================= SESIÓN ================= */
+const { data: { user } } = await supabase.auth.getUser();
+const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+if (!user && !esInvitado) {
+  location.href = "login.html";
+}
+
+/* ================= ROL ================= */
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("role")
+  .eq("id", user.id)
+  .single();
+
+if (!profile || profile.role !== "admin") {
+  alert("Acceso denegado");
+  location.href = "login.html";
+}
+
+/* ================= CARGAR ================= */
+async function cargarMateriales() {
+
+  const { data, error } = await supabase
+    .from("materiales")
+    .select("*")
+    .order("nombre");
+
+  if (error) {
+    console.error(error);
+    return alert(error.message);
+  }
+
+  const tbody = document.querySelector("#tablaMateriales tbody");
+  tbody.innerHTML = "";
+
+  (data || []).forEach(mat => {
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${mat.nombre}</td>
+        <td>${mat.stock}</td>
+        <td>${mat.unidad}</td>
+        <td>${mat.categoria || "-"}</td>
+        <td>
+          <button onclick="editar('${mat.id}')">Editar</button>
+          <button onclick="eliminar('${mat.id}')">Eliminar</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+/* ================= EDITAR ================= */
+window.editar = (id) => {
+  location.href = `materiales-form.html?id=${id}`;
+};
+
+/* ================= ELIMINAR ================= */
+window.eliminar = async (id) => {
+
+  if (!confirm("¿Eliminar material?")) return;
+
+  await supabase
+    .from("actividades_materiales")
+    .delete()
+    .eq("material_id", id);
+
+  const { error } = await supabase
+    .from("materiales")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+    return alert("Error al eliminar: " + error.message);
+  }
+
+  cargarMateriales();
+};
+
+/* ================= LOGOUT ================= */
+document.getElementById("logoutBtn").onclick = logout;
+
+/* ================= INIT ================= */
+cargarMateriales();
+
+</script>
+
+</body>
+</html>

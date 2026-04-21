@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Familiar - AMPAgo</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+
+<header>
+  Panel Familiar
+
+  <div class="profile-menu">
+    <img src="../img/user.png" class="profile-icon" id="profileToggle">
+
+    <div class="profile-dropdown" id="profileDropdown">
+      <p id="profileEmail"></p>
+      <p id="profileRole"></p>
+      <button id="logoutBtn">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <h2>Bienvenido</h2>
+
+  <button onclick="location.href='mis-hijos.html'">
+    Mis hijos
+  </button>
+
+  <button onclick="location.href='actividades.html'">
+    Actividades disponibles
+  </button>
+
+  <button onclick="location.href='anuncios.html'">
+    Tablón de anuncios
+  </button>
+
+</div>
+
+<script type="module">
+import { supabase } from "../js/supabaseclientes.js";
+
+/* ============================================================
+   BLOQUEAR FLECHA ATRÁS
+   ============================================================ */
+window.history.pushState(null, "", window.location.href);
+window.addEventListener("popstate", function () {
+  window.history.pushState(null, "", window.location.href);
+});
+
+/* ============================================================
+   SESIÓN
+   ============================================================ */
+const { data: { user } } = await supabase.auth.getUser();
+if (!user) {
+  location.href = "login.html";
+}
+
+/* ============================================================
+   PERFIL
+   ============================================================ */
+const { data: profile, error } = await supabase
+  .from("profiles")
+  .select("role, nombre, apellidos")
+  .eq("id", user.id)
+  .maybeSingle();
+
+if (error || !profile) {
+  alert("No se pudo cargar el perfil");
+  location.href = "login.html";
+}
+
+/* ============================================================
+   CONTROL DE ACCESO
+   ============================================================ */
+if (profile.role !== "familiar") {
+  alert("Acceso restringido a familiares");
+  location.href = "login.html";
+}
+
+/* ============================================================
+   UI PERFIL
+   ============================================================ */
+document.getElementById("profileEmail").textContent = user.email || "";
+document.getElementById("profileRole").textContent = "Rol: " + profile.role;
+
+/* ============================================================
+   MENÚ PERFIL
+   ============================================================ */
+document.getElementById("profileToggle").onclick = () => {
+  const d = document.getElementById("profileDropdown");
+  d.style.display = d.style.display === "block" ? "none" : "block";
+};
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".profile-menu")) {
+    document.getElementById("profileDropdown").style.display = "none";
+  }
+});
+
+/* ============================================================
+   LOGOUT
+   ============================================================ */
+document.getElementById("logoutBtn").onclick = async () => {
+  await supabase.auth.signOut();
+  localStorage.clear();
+  sessionStorage.clear();
+  window.location.replace("login.html");
+};
+</script>
+
+</body>
+</html>

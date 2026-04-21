@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Mis hijos - AMPAgo</title>
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    .nav-container {
+      margin: 10px 0 20px 0;
+    }
+    .nav-btn {
+      background: #eee;
+      border: 1px solid #ccc;
+      padding: 6px 12px;
+      margin-right: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  Mis hijos
+
+  <div class="profile-menu">
+    <img src="../img/user.png" class="profile-icon" id="profileToggle">
+
+    <div class="profile-dropdown" id="profileDropdown">
+      <p id="profileEmail"></p>
+      <p id="profileRole"></p>
+      <button id="logoutBtn">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Botones de navegación debajo del título -->
+  <div class="nav-container">
+    <button id="btnVolver" class="nav-btn">Volver</button>
+    <button id="btnInicio" class="nav-btn">Inicio</button>
+  </div>
+
+  <h2>Listado de hijos</h2>
+
+  <button id="btnNuevo">Añadir hijo</button>
+
+  <table id="tablaHijos">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Apellidos</th>
+        <th>Curso</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+
+    <tbody id="tbodyHijos">
+      <tr><td colspan="4">Cargando...</td></tr>
+    </tbody>
+  </table>
+
+</div>
+
+<script type="module">
+import { supabase } from "../js/supabaseclientes.js";
+
+/* ================= NAVEGACIÓN UNIVERSAL ================= */
+async function navegar() {
+  const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+  if (esInvitado) {
+    location.href = "invitado.html";
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    location.href = "login.html";
+    return;
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  switch (profile?.role) {
+    case "admin": location.href = "admin.html"; break;
+    case "monitor": location.href = "monitor.html"; break;
+    case "familiar": location.href = "familiar.html"; break;
+    default: location.href = "login.html";
+  }
+}
+
+document.getElementById("btnVolver").onclick = navegar;
+document.getElementById("btnInicio").onclick = navegar;
+
+/* ================= SESIÓN ================= */
+const { data: { user } } = await supabase.auth.getUser();
+
+if (!user) {
+  location.href = "login.html";
+}
+
+/* ================= PERFIL ================= */
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("role")
+  .eq("id", user.id)
+  .maybeSingle();
+
+if (!profile || profile.role !== "familiar") {
+  alert("Solo los familiares pueden acceder");
+  location.href = "login.html";
+}
+
+/* ================= UI PERFIL ================= */
+document.getElementById("profileEmail").textContent = user.email || "";
+document.getElementById("profileRole").textContent = "Rol: " + profile.role;
+
+/* ================= MENÚ PERFIL ================= */
+document.getElementById("profileToggle").onclick = () => {
+  const d = document.getElementById("profileDropdown");
+  d.style.display = d.style.display === "block" ? "none" : "block";
+};
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".profile-menu")) {
+    document.getElementById("profileDropdown").style.display = "none";
+  }
+});
+
+/* ================= LOGOUT ================= */
+document.getElementById("logoutBtn").onclick = async () => {
+  await supabase.auth.signOut();
+  location.href = "login.html";
+};
+
+/* ================= CARGAR HIJOS ================= */
+async function cargarHijos() {
+
+  const { data, error } = await supabase
+    .from("alumnos")
+    .select("*")
+    .eq("familiar_id", user.id)
+    .order("nombre", { ascending: true });
+
+  const tbody = document.getElementById("tbodyHijos");
+
+  if (error) {
+    console.error(error);
+    tbody.innerHTML = `<tr><td colspan="4">Error cargando hijos.</td></tr>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4">No tienes hijos registrados.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(h => `
+    <tr>
+      <td>${h.nombre}</td>
+      <td>${h.apellidos}</td>
+      <td>${h.curso || "-"}</td>
+      <td>
+        <button onclick="editarHijo('${h.id}')">Editar</button>
+        <button onclick="borrarHijo('${h.id}')">Borrar</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+/* ================= EDITAR ================= */
+window.editarHijo = (id) => {
+  location.href = `mis-hijos-form.html?id=${id}`;
+};
+
+/* ================= BORRAR ================= */
+window.borrarHijo = async (id) => {
+
+  if (!confirm("¿Seguro que quieres borrar este hijo?")) return;
+
+  const { error } = await supabase
+    .from("alumnos")
+    .delete()
+    .eq("id", id)
+    .eq("familiar_id", user.id);
+
+  if (error) {
+    console.error(error);
+    alert("No se pudo borrar el hijo");
+    return;
+  }
+
+  cargarHijos();
+};
+
+/* ================= NUEVO HIJO ================= */
+document.getElementById("btnNuevo").onclick = () => {
+  location.href = "mis-hijos-form.html";
+};
+
+/* ================= INICIO ================= */
+cargarHijos();
+</script>
+
+</body>
+</html>

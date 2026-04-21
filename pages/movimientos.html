@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Movimientos</title>
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    .nav-container {
+      margin: 10px 0 20px 0;
+    }
+    .nav-btn {
+      background: #eee;
+      border: 1px solid #ccc;
+      padding: 6px 12px;
+      margin-right: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>AMPAgo</header>
+
+<div class="container">
+
+  <!-- Navegación universal -->
+  <div class="nav-container">
+    <button id="btnVolver" class="nav-btn">Volver</button>
+    <button id="btnInicio" class="nav-btn">Inicio</button>
+  </div>
+
+  <h2>Movimientos del almacén</h2>
+
+  <button onclick="location.href='admin-material.html'">Volver a materiales</button>
+
+  <h3>Registrar movimiento</h3>
+
+  <select id="material"></select>
+  <select id="tipo">
+    <option value="entrada">Entrada</option>
+    <option value="salida">Salida</option>
+  </select>
+
+  <input id="cantidad" type="number" placeholder="Cantidad">
+  <input id="nota" type="text" placeholder="Nota (opcional)">
+
+  <button id="btnRegistrar">Registrar</button>
+
+  <h3>Historial</h3>
+
+  <table id="tablaMov">
+    <thead>
+      <tr>
+        <th>Material</th>
+        <th>Tipo</th>
+        <th>Cantidad</th>
+        <th>Fecha</th>
+        <th>Usuario</th>
+        <th>Nota</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+</div>
+
+<script type="module">
+import { supabase } from "../js/supabaseclientes.js";
+
+/* ================= NAVEGACIÓN UNIVERSAL ================= */
+async function navegar() {
+  const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+  if (esInvitado) {
+    location.href = "invitado.html";
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    location.href = "login.html";
+    return;
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  switch (profile?.role) {
+    case "admin": location.href = "admin.html"; break;
+    case "monitor": location.href = "monitor.html"; break;
+    case "familiar": location.href = "familiar.html"; break;
+    default: location.href = "login.html";
+  }
+}
+
+document.getElementById("btnVolver").onclick = navegar;
+document.getElementById("btnInicio").onclick = navegar;
+
+/* ================= SESIÓN ================= */
+const { data: { user } } = await supabase.auth.getUser();
+const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+if (!user && !esInvitado) {
+  location.href = "login.html";
+}
+
+/* ================= CARGAR MATERIALES ================= */
+async function cargarMateriales() {
+  const { data } = await supabase
+    .from("materiales")
+    .select("*")
+    .order("nombre");
+
+  const sel = document.getElementById("material");
+  sel.innerHTML = "";
+
+  data.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = m.nombre;
+    sel.appendChild(opt);
+  });
+}
+
+/* ================= REGISTRAR MOVIMIENTO ================= */
+document.getElementById("btnRegistrar").onclick = async () => {
+  const material_id = document.getElementById("material").value;
+  const tipo = document.getElementById("tipo").value;
+  const cantidad = parseInt(document.getElementById("cantidad").value);
+  const nota = document.getElementById("nota").value.trim();
+
+  if (!cantidad || cantidad <= 0) {
+    alert("Cantidad inválida");
+    return;
+  }
+
+  await supabase.from("movimientos").insert({
+    material_id,
+    tipo,
+    cantidad,
+    usuario_id: user.id,
+    nota
+  });
+
+  cargarMovimientos();
+};
+
+/* ================= CARGAR HISTORIAL ================= */
+async function cargarMovimientos() {
+  const { data } = await supabase
+    .from("movimientos")
+    .select("*, materiales(nombre), profiles(email)")
+    .order("fecha", { ascending: false });
+
+  const tbody = document.querySelector("#tablaMov tbody");
+  tbody.innerHTML = "";
+
+  data.forEach(m => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${m.materiales.nombre}</td>
+      <td>${m.tipo}</td>
+      <td>${m.cantidad}</td>
+      <td>${new Date(m.fecha).toLocaleString()}</td>
+      <td>${m.profiles?.email || "-"}</td>
+      <td>${m.nota || "-"}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+cargarMateriales();
+cargarMovimientos();
+</script>
+
+</body>
+</html>

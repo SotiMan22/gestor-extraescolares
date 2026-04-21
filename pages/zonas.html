@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Zonas - AMPAgo</title>
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    .nav-container {
+      margin: 10px 0 20px 0;
+    }
+    .nav-btn {
+      background: #eee;
+      border: 1px solid #ccc;
+      padding: 6px 12px;
+      margin-right: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  Zonas
+</header>
+
+<div class="container">
+
+  <!-- Navegación universal -->
+  <div class="nav-container">
+    <button id="btnVolver" class="nav-btn">Volver</button>
+    <button id="btnInicio" class="nav-btn">Inicio</button>
+  </div>
+
+  <h2>Zonas disponibles</h2>
+
+  <div id="listaZonas">Cargando...</div>
+
+</div>
+
+<script type="module">
+import { supabase } from "../js/supabaseclientes.js";
+
+/* ================= NAVEGACIÓN UNIVERSAL ================= */
+async function navegar() {
+  const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+  if (esInvitado) {
+    location.href = "invitado.html";
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    location.href = "login.html";
+    return;
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  switch (profile?.role) {
+    case "admin": location.href = "admin.html"; break;
+    case "monitor": location.href = "monitor.html"; break;
+    case "familiar": location.href = "familiar.html"; break;
+    default: location.href = "login.html";
+  }
+}
+
+document.getElementById("btnVolver").onclick = navegar;
+document.getElementById("btnInicio").onclick = navegar;
+
+/* ================= CARGAR ZONAS ================= */
+const { data: zonas } = await supabase
+  .from("zonas")
+  .select("*")
+  .order("nombre");
+
+const cont = document.getElementById("listaZonas");
+
+cont.innerHTML = zonas.map(z => `
+  <p>
+    <strong>${z.nombre}</strong><br>
+    ${z.descripcion || ""}
+  </p>
+`).join("");
+</script>
+
+</body>
+</html>

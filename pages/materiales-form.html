@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Material - Formulario</title>
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    .nav-container {
+      margin: 10px 0 20px 0;
+    }
+    .nav-btn {
+      background: #eee;
+      border: 1px solid #ccc;
+      padding: 6px 12px;
+      margin-right: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>AMPAgo</header>
+
+<div class="container">
+
+  <!-- Botones de navegación debajo del título -->
+  <div class="nav-container">
+    <button id="btnVolver" class="nav-btn">Volver</button>
+    <button id="btnInicio" class="nav-btn">Inicio</button>
+  </div>
+
+  <h2 id="titulo">Crear material</h2>
+
+  <input id="nombre" type="text" placeholder="Nombre">
+  <input id="descripcion" type="text" placeholder="Descripción">
+  <input id="stock" type="number" placeholder="Stock inicial">
+  <input id="unidad" type="text" placeholder="Unidad (uds, cajas...)">
+  <input id="categoria" type="text" placeholder="Categoría">
+
+  <button id="btnGuardar">Guardar</button>
+
+</div>
+
+<script type="module">
+import { supabase } from "../js/supabaseclientes.js";
+
+/* ================= NAVEGACIÓN UNIVERSAL ================= */
+async function navegar() {
+  const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+  if (esInvitado) {
+    location.href = "invitado.html";
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    location.href = "login.html";
+    return;
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  switch (profile?.role) {
+    case "admin": location.href = "admin.html"; break;
+    case "monitor": location.href = "monitor.html"; break;
+    case "familiar": location.href = "familiar.html"; break;
+    default: location.href = "login.html";
+  }
+}
+
+document.getElementById("btnVolver").onclick = navegar;
+document.getElementById("btnInicio").onclick = navegar;
+
+/* ================= VERIFICAR SESIÓN Y ROL ================= */
+const { data: { user } } = await supabase.auth.getUser();
+const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+if (!user && !esInvitado) {
+  location.href = "login.html";
+}
+
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("role")
+  .eq("id", user.id)
+  .single();
+
+if (!profile || profile.role !== "admin") {
+  alert("Acceso denegado");
+  location.href = "login.html";
+}
+
+/* ================= DETECTAR SI ES EDICIÓN ================= */
+const params = new URLSearchParams(location.search);
+const materialId = params.get("id");
+
+if (materialId) {
+  document.getElementById("titulo").textContent = "Editar material";
+
+  const { data } = await supabase
+    .from("materiales")
+    .select("*")
+    .eq("id", materialId)
+    .single();
+
+  document.getElementById("nombre").value = data.nombre;
+  document.getElementById("descripcion").value = data.descripcion || "";
+  document.getElementById("stock").value = data.stock;
+  document.getElementById("unidad").value = data.unidad;
+  document.getElementById("categoria").value = data.categoria || "";
+}
+
+/* ================= GUARDAR MATERIAL ================= */
+document.getElementById("btnGuardar").onclick = async () => {
+  const nombre = document.getElementById("nombre").value.trim();
+  const descripcion = document.getElementById("descripcion").value.trim();
+  const stock = parseInt(document.getElementById("stock").value);
+  const unidad = document.getElementById("unidad").value.trim();
+  const categoria = document.getElementById("categoria").value.trim();
+
+  if (!nombre || !unidad) {
+    alert("Completa los campos obligatorios");
+    return;
+  }
+
+  if (materialId) {
+    await supabase.from("materiales").update({
+      nombre, descripcion, stock, unidad, categoria
+    }).eq("id", materialId);
+  } else {
+    await supabase.from("materiales").insert({
+      nombre, descripcion, stock, unidad, categoria, creado_por: user.id
+    });
+  }
+
+  location.href = "admin-materiales.html";
+};
+</script>
+
+</body>
+</html>

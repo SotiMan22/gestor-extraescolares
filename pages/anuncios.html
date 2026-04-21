@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Tablón de anuncios - AMPAgo</title>
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    .card {
+      background: white;
+      padding: 15px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .card h3 { margin: 0 0 5px; }
+    .card small { color: #666; }
+
+    .nav-container {
+      margin: 10px 0 20px 0;
+    }
+    .nav-btn {
+      background: #eee;
+      border: 1px solid #ccc;
+      padding: 6px 12px;
+      margin-right: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>Tablón de anuncios</header>
+
+<div class="container">
+
+  <!-- Navegación universal -->
+  <div class="nav-container">
+    <button id="btnVolver" class="nav-btn">Volver</button>
+    <button id="btnInicio" class="nav-btn">Inicio</button>
+  </div>
+
+  <!-- BOTÓN CREAR ANUNCIO (solo admin/monitor) -->
+  <div id="adminControls" style="display:none; margin-bottom:15px;">
+    <button id="btnCrearAnuncio">Crear anuncio</button>
+  </div>
+
+  <h2>Anuncios</h2>
+
+  <div id="lista">Cargando...</div>
+
+</div>
+
+<script type="module">
+import { supabase } from "../js/supabaseclientes.js";
+
+/* ================= NAVEGACIÓN UNIVERSAL ================= */
+async function navegar() {
+  const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+  if (esInvitado) {
+    location.href = "invitado.html";
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    location.href = "login.html";
+    return;
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const pagina = location.pathname.split("/").pop();
+
+  // NO redirigir si ya estamos en anuncios.html
+  if (pagina !== "anuncios.html") {
+    switch (profile?.role) {
+      case "admin": location.href = "admin.html"; return;
+      case "monitor": location.href = "monitor.html"; return;
+      case "familiar": location.href = "familiar.html"; return;
+      default: location.href = "login.html"; return;
+    }
+  }
+}
+
+document.getElementById("btnVolver").onclick = navegar;
+document.getElementById("btnInicio").onclick = navegar;
+
+/* ================= PERMISOS PARA CREAR ANUNCIOS ================= */
+const { data: { user } } = await supabase.auth.getUser();
+let puedeCrear = false;
+
+if (user) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  puedeCrear = (profile?.role === "admin" || profile?.role === "monitor");
+}
+
+if (puedeCrear) {
+  document.getElementById("adminControls").style.display = "block";
+  document.getElementById("btnCrearAnuncio").onclick = () => {
+    location.href = "anuncios-form.html";
+  };
+}
+
+/* ================= CARGAR ANUNCIOS ================= */
+async function cargarAnuncios() {
+  const { data, error } = await supabase
+    .from("anuncios")
+    .select(`
+      id,
+      titulo,
+      mensaje,
+      fecha,
+      profiles (nombre, apellidos)
+    `)
+    .order("fecha", { ascending: false });
+
+  const cont = document.getElementById("lista");
+
+  if (error) {
+    cont.innerHTML = "<p>Error cargando anuncios.</p>";
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    cont.innerHTML = "<p>No hay anuncios todavía.</p>";
+    return;
+  }
+
+  cont.innerHTML = data.map(a => `
+    <div class="card">
+      <h3>${a.titulo}</h3>
+      <p>${a.mensaje}</p>
+      <small>
+        Publicado por: ${a.profiles?.nombre || ""} ${a.profiles?.apellidos || ""}<br>
+        Fecha: ${new Date(a.fecha).toLocaleString()}
+      </small>
+    </div>
+  `).join("");
+}
+
+cargarAnuncios();
+</script>
+
+</body>
+</html>

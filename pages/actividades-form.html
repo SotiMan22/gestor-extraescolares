@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Formulario Actividad - AMPAgo</title>
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    .nav-container {
+      margin: 10px 0 20px 0;
+    }
+    .nav-btn {
+      background: #eee;
+      border: 1px solid #ccc;
+      padding: 6px 12px;
+      margin-right: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  Actividades – Formulario
+</header>
+
+<div class="container">
+
+  <!-- Botones de navegación debajo del título -->
+  <div class="nav-container">
+    <button id="btnVolver" class="nav-btn">Volver</button>
+    <button id="btnInicio" class="nav-btn">Inicio</button>
+  </div>
+
+  <h2 id="tituloForm">Crear actividad</h2>
+
+  <form id="formActividad">
+
+    <label>Nombre</label>
+    <input type="text" id="nombre" required>
+
+    <label>Descripción</label>
+    <textarea id="descripcion"></textarea>
+
+    <label>Día 1</label>
+    <input type="text" id="dia1">
+
+    <label>Día 2</label>
+    <input type="text" id="dia2">
+
+    <label>Material</label>
+    <select id="material_id">
+      <option value="">Sin material</option>
+    </select>
+
+    <label>Monitor</label>
+    <select id="monitor_id">
+      <option value="">Sin monitor</option>
+    </select>
+
+    <label>Zona</label>
+    <select id="zona_id">
+      <option value="">Sin zona</option>
+    </select>
+
+    <button type="submit" id="btnGuardar">Guardar</button>
+    <button type="button" id="btnCancelar">Cancelar</button>
+
+  </form>
+
+</div>
+
+<script type="module">
+import { supabase } from "../js/supabaseclientes.js";
+
+const params = new URLSearchParams(window.location.search);
+const actividadId = params.get("id");
+
+/* ================= NAVEGACIÓN UNIVERSAL ================= */
+async function navegar() {
+  const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+  if (esInvitado) {
+    location.href = "invitado.html";
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    location.href = "login.html";
+    return;
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  switch (profile?.role) {
+    case "admin": location.href = "admin.html"; break;
+    case "monitor": location.href = "monitor.html"; break;
+    case "familiar": location.href = "familiar.html"; break;
+    default: location.href = "login.html";
+  }
+}
+
+document.getElementById("btnVolver").onclick = navegar;
+document.getElementById("btnInicio").onclick = navegar;
+
+/* ================= CARGAR SELECTS ================= */
+async function cargarSelects() {
+
+  const { data: materiales } = await supabase
+    .from("materiales")
+    .select("id, nombre")
+    .order("nombre");
+
+  const selMat = document.getElementById("material_id");
+  materiales?.forEach(m => {
+    selMat.innerHTML += `<option value="${m.id}">${m.nombre}</option>`;
+  });
+
+  const { data: monitores } = await supabase
+    .from("monitores")
+    .select("id, nombre, apellidos")
+    .order("nombre");
+
+  const selMon = document.getElementById("monitor_id");
+  monitores?.forEach(m => {
+    selMon.innerHTML += `<option value="${m.id}">${m.nombre} ${m.apellidos || ""}</option>`;
+  });
+
+  const { data: zonas } = await supabase
+    .from("zonas")
+    .select("id, nombre")
+    .order("nombre");
+
+  const selZona = document.getElementById("zona_id");
+  zonas?.forEach(z => {
+    selZona.innerHTML += `<option value="${z.id}">${z.nombre}</option>`;
+  });
+}
+
+/* ================= CARGAR ACTIVIDAD PARA EDITAR ================= */
+async function cargarActividad() {
+  if (!actividadId) return;
+
+  document.getElementById("tituloForm").textContent = "Modificar actividad";
+
+  const { data: a } = await supabase
+    .from("actividades")
+    .select("*")
+    .eq("id", actividadId)
+    .maybeSingle();
+
+  if (!a) return;
+
+  document.getElementById("nombre").value = a.nombre || "";
+  document.getElementById("descripcion").value = a.descripcion || "";
+  document.getElementById("dia1").value = a.dia1 || "";
+  document.getElementById("dia2").value = a.dia2 || "";
+  document.getElementById("material_id").value = a.material_id || "";
+  document.getElementById("monitor_id").value = a.monitor_id || "";
+  document.getElementById("zona_id").value = a.zona_id || "";
+}
+
+/* ================= GUARDAR ================= */
+document.getElementById("formActividad").onsubmit = async (e) => {
+  e.preventDefault();
+
+  const datos = {
+    nombre: document.getElementById("nombre").value,
+    descripcion: document.getElementById("descripcion").value,
+    dia1: document.getElementById("dia1").value,
+    dia2: document.getElementById("dia2").value,
+    material_id: document.getElementById("material_id").value || null,
+    monitor_id: document.getElementById("monitor_id").value || null,
+    zona_id: document.getElementById("zona_id").value || null
+  };
+
+  let res;
+
+  if (actividadId) {
+    res = await supabase
+      .from("actividades")
+      .update(datos)
+      .eq("id", actividadId);
+  } else {
+    res = await supabase
+      .from("actividades")
+      .insert(datos);
+  }
+
+  if (res.error) {
+    alert("Error: " + res.error.message);
+    return;
+  }
+
+  location.href = "actividades.html";
+};
+
+/* ================= CANCELAR ================= */
+document.getElementById("btnCancelar").onclick = () => {
+  location.href = "actividades.html";
+};
+
+/* ================= INICIO ================= */
+await cargarSelects();
+await cargarActividad();
+
+</script>
+
+</body>
+</html>

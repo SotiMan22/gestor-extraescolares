@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - AMPAgo</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+
+<header>AMPAgo</header>
+
+<div class="container">
+
+  <h2>Iniciar sesión</h2>
+
+  <input id="email" type="email" placeholder="Correo electrónico">
+  <input id="password" type="password" placeholder="Contraseña">
+
+  <button id="btnLogin">Entrar</button>
+
+  <button id="btnInvitado">Entrar como invitado</button>
+
+  <!-- Botón de desarrollo oculto -->
+  <button id="btnAutoLogin" style="display:none;">
+    Entrar como admin (DEV)
+  </button>
+
+</div>
+
+<script type="module">
+console.log("SCRIPT CARGA OK");
+import { supabase } from "../js/supabaseclientes.js";
+
+document.addEventListener("DOMContentLoaded", () => {
+console.log("DOM listo");
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+document.getElementById("btnLogin").onclick = async () => {
+
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    alert("Introduce correo y contraseña");
+    return;
+  }
+
+  const btn = document.getElementById("btnLogin");
+  btn.disabled = true;
+  btn.textContent = "Entrando...";
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    const user = data.user;
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) {
+      console.error(profileError);
+      throw new Error("No se pudo cargar el perfil");
+    }
+
+    switch (profile.role) {
+      case "admin":
+        location.href = "admin.html";
+        break;
+      case "familiar":
+        location.href = "familiar.html";
+        break;
+      case "monitor":
+        location.href = "monitor.html";
+        break;
+      default:
+        location.href = "invitado.html";
+        break;
+    }
+
+  } catch (e) {
+    alert("Error: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Entrar";
+  }
+};
+
+/* ============================================================
+   INVITADO
+   ============================================================ */
+document.getElementById("btnInvitado").onclick = () => {
+  sessionStorage.setItem("invitado", "true");
+  location.href = "invitado.html";
+};
+
+/* ============================================================
+   AUTO LOGIN (DEV)
+   ============================================================ */
+document.getElementById("btnAutoLogin").onclick = async () => {
+  try {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: "prueba1@gmail.com",
+      password: "Qwerty1234"
+    });
+
+    if (error) throw error;
+
+    location.href = "admin.html";
+
+  } catch (e) {
+    alert("Error: " + e.message);
+  }
+};
+
+});
+</script>
+
+</body>
+</html>

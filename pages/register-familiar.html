@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Registro Familiar - AMPAgo</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+
+<header>Registro Familiar</header>
+
+<div class="container">
+
+  <h2>Crear cuenta de familiar</h2>
+
+  <input id="nombre" type="text" placeholder="Nombre">
+  <input id="apellidos" type="text" placeholder="Apellidos">
+  <input id="email" type="email" placeholder="Correo electrónico">
+  <input id="password" type="password" placeholder="Contraseña">
+
+  <button id="btnRegistrar">Registrarse</button>
+  <button onclick="location.href='login.html'">Volver</button>
+
+</div>
+
+<script type="module">
+
+import { supabase } from "../js/supabaseclientes.js";
+
+console.log("Register familiar cargado");
+
+/* ============================================================
+   REGISTRO
+============================================================ */
+document.getElementById("btnRegistrar").onclick = async () => {
+
+  const nombre = document.getElementById("nombre").value.trim();
+  const apellidos = document.getElementById("apellidos").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!nombre || !apellidos || !email || !password) {
+    alert("Todos los campos son obligatorios");
+    return;
+  }
+
+  const btn = document.getElementById("btnRegistrar");
+  btn.disabled = true;
+  btn.textContent = "Creando cuenta...";
+
+  try {
+
+    /* 1. CREAR USUARIO AUTH */
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    const user = data.user;
+
+    if (!user) {
+      alert("Revisa tu correo para confirmar la cuenta");
+      return;
+    }
+
+    /* 2. CREAR PERFIL */
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert([{
+        id: user.id,
+        email,
+        nombre,
+        apellidos,
+        role: "familiar"
+      }]);
+
+    if (profileError) throw profileError;
+
+    alert("Cuenta creada correctamente");
+    location.href = "login.html";
+
+  } catch (e) {
+    console.error(e);
+    alert("Error: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Registrarse";
+  }
+};
+
+</script>
+
+</body>
+</html>
