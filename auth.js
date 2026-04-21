@@ -1,4 +1,4 @@
-import { supabase } from "./supabaseclientes.js"
+import { supabase } from "./supabaseclientes.js";
 
 /* ============================================
    REGISTRO (ADMIN)
@@ -17,13 +17,7 @@ export async function register(email, password, nombre, apellidos, role) {
     throw new Error("Usuario no creado (posible verificación por email activa)");
   }
 
-  const esInvitado = sessionStorage.getItem("invitado") === "true";
-
-  let userId = null;
-  if (!esInvitado && user) {
-    userId = user.id;
-  }
-
+  const userId = data.user.id;
 
   const { error: profileError } = await supabase
     .from("profiles")
@@ -53,13 +47,7 @@ export async function login(email, password) {
 
   if (error) throw new Error(error.message);
 
-  const esInvitado = sessionStorage.getItem("invitado") === "true";
-
-  let userId = null;
-  if (!esInvitado && user) {
-    userId = user.id;
-  }
-
+  const userId = data.user.id;
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -73,22 +61,24 @@ export async function login(email, password) {
 }
 
 /* ============================================
-   REDIRECCIÓN POR ROL
+   REDIRECCIÓN POR ROL (GitHub Pages)
    ============================================ */
 
 function redirigir(role) {
+  const base = "/gestor-extraescolares/";
+
   switch (role) {
     case "admin":
-      window.location.href = "admin.html";
+      window.location.href = base + "admin.html";
       break;
     case "monitor":
-      window.location.href = "monitor.html";
+      window.location.href = base + "monitor.html";
       break;
     case "familiar":
-      window.location.href = "familiar.html";
+      window.location.href = base + "familiar.html";
       break;
     default:
-      window.location.href = "login.html";
+      window.location.href = base + "login.html";
   }
 }
 
@@ -98,7 +88,7 @@ function redirigir(role) {
 
 export function entrarInvitado() {
   localStorage.setItem("invitado", "true");
-  window.location.href = "invitado.html";
+  window.location.href = "/gestor-extraescolares/invitado.html";
 }
 
 /* ============================================
@@ -108,5 +98,5 @@ export function entrarInvitado() {
 export async function logout() {
   await supabase.auth.signOut();
   localStorage.removeItem("invitado");
-  window.location.href = "login.html";
+  window.location.href = "/gestor-extraescolares/login.html";
 }

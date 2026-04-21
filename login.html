@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Login - AMPAgo</title>
-  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="/gestor-extraescolares/style.css">
 </head>
 
 <body>
@@ -30,7 +30,7 @@
 
 <script type="module">
 console.log("SCRIPT CARGA OK");
-import { supabase } from "../js/supabaseclientes.js";
+import { supabase } from "/gestor-extraescolares/js/supabaseclientes.js";
 
 document.addEventListener("DOMContentLoaded", () => {
 console.log("DOM listo");
@@ -75,16 +75,16 @@ document.getElementById("btnLogin").onclick = async () => {
 
     switch (profile.role) {
       case "admin":
-        location.href = "admin.html";
+        location.href = "/gestor-extraescolares/admin.html";
         break;
       case "familiar":
-        location.href = "familiar.html";
+        location.href = "/gestor-extraescolares/familiar.html";
         break;
       case "monitor":
-        location.href = "monitor.html";
+        location.href = "/gestor-extraescolares/monitor.html";
         break;
       default:
-        location.href = "invitado.html";
+        location.href = "/gestor-extraescolares/invitado.html";
         break;
     }
 
@@ -101,7 +101,7 @@ document.getElementById("btnLogin").onclick = async () => {
    ============================================================ */
 document.getElementById("btnInvitado").onclick = () => {
   sessionStorage.setItem("invitado", "true");
-  location.href = "invitado.html";
+  location.href = "/gestor-extraescolares/invitado.html";
 };
 
 /* ============================================================
@@ -116,7 +116,7 @@ document.getElementById("btnAutoLogin").onclick = async () => {
 
     if (error) throw error;
 
-    location.href = "admin.html";
+    location.href = "/gestor-extraescolares/admin.html";
 
   } catch (e) {
     alert("Error: " + e.message);

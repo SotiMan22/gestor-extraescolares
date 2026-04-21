@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Panel Invitado - AMPAgo</title>
-  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="/gestor-extraescolares/style.css">
 
   <style>
     header {
@@ -25,11 +25,11 @@
 
   <h2>Bienvenido</h2>
 
-  <button onclick="location.href='actividades.html'">
+  <button onclick="location.href='/gestor-extraescolares/actividades.html'">
     Actividades
   </button>
 
-  <button onclick="location.href='anuncios.html'">
+  <button onclick="location.href='/gestor-extraescolares/anuncios.html'">
     Tablón de anuncios
   </button>
 
@@ -54,8 +54,7 @@ window.addEventListener("popstate", function () {
 const esInvitado = sessionStorage.getItem("invitado") === "true";
 
 if (!esInvitado) {
-  // Si no está marcado como invitado, volver al login
-  location.href = "login.html";
+  location.href = "/gestor-extraescolares/login.html";
 }
 
 /* ============================================================
@@ -63,7 +62,7 @@ if (!esInvitado) {
    ============================================================ */
 function salir() {
   sessionStorage.removeItem("invitado");
-  location.href = "login.html";
+  location.href = "/gestor-extraescolares/login.html";
 }
 </script>
 

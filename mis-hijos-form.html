@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Hijo - AMPAgo</title>
-  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="/gestor-extraescolares/style.css">
 
   <style>
     .nav-container {
@@ -47,20 +47,20 @@
 </div>
 
 <script type="module">
-import { supabase } from "../js/supabaseclientes.js";
+import { supabase } from "/gestor-extraescolares/js/supabaseclientes.js";
 
 /* ================= NAVEGACIÓN UNIVERSAL ================= */
 async function navegar() {
   const esInvitado = sessionStorage.getItem("invitado") === "true";
 
   if (esInvitado) {
-    location.href = "invitado.html";
+    location.href = "/gestor-extraescolares/invitado.html";
     return;
   }
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    location.href = "login.html";
+    location.href = "/gestor-extraescolares/login.html";
     return;
   }
 
@@ -71,10 +71,10 @@ async function navegar() {
     .maybeSingle();
 
   switch (profile?.role) {
-    case "admin": location.href = "admin.html"; break;
-    case "monitor": location.href = "monitor.html"; break;
-    case "familiar": location.href = "familiar.html"; break;
-    default: location.href = "login.html";
+    case "admin": location.href = "/gestor-extraescolares/admin.html"; break;
+    case "monitor": location.href = "/gestor-extraescolares/monitor.html"; break;
+    case "familiar": location.href = "/gestor-extraescolares/familiar.html"; break;
+    default: location.href = "/gestor-extraescolares/login.html";
   }
 }
 
@@ -85,7 +85,7 @@ document.getElementById("btnInicio").onclick = navegar;
 const { data: { user } } = await supabase.auth.getUser();
 
 if (!user) {
-  location.href = "login.html";
+  location.href = "/gestor-extraescolares/login.html";
 }
 
 /* ================= PERFIL ================= */
@@ -97,7 +97,7 @@ const { data: profile } = await supabase
 
 if (!profile || profile.role !== "familiar") {
   alert("Solo los familiares pueden acceder");
-  location.href = "login.html";
+  location.href = "/gestor-extraescolares/login.html";
 }
 
 /* ================= ID HIJO ================= */
@@ -123,7 +123,7 @@ async function cargarHijo() {
 
   if (error || !hijo) {
     alert("Error cargando hijo");
-    location.href = "mis-hijos.html";
+    location.href = "/gestor-extraescolares/mis-hijos.html";
     return;
   }
 
@@ -179,12 +179,12 @@ document.getElementById("btnGuardar").onclick = async () => {
     return;
   }
 
-  location.href = "mis-hijos.html";
+  location.href = "/gestor-extraescolares/mis-hijos.html";
 };
 
 /* ================= INSCRIBIR EN ACTIVIDADES ================= */
 document.getElementById("btnInscribir").onclick = () => {
-  location.href = `mis-hijos-actividades.html?id=${id}`;
+  location.href = `/gestor-extraescolares/mis-hijos-actividades.html?id=${id}`;
 };
 </script>
 

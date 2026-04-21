@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Actividades - AMPAgo</title>
-  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="/gestor-extraescolares/style.css">
 
   <style>
     .seleccionada {
@@ -81,20 +81,20 @@
 </div>
 
 <script type="module">
-import { supabase } from "../js/supabaseclientes.js";
+import { supabase } from "/gestor-extraescolares/js/supabaseclientes.js";
 
 /* ================= NAVEGACIÓN UNIVERSAL ================= */
 async function navegar() {
   const esInvitado = sessionStorage.getItem("invitado") === "true";
 
   if (esInvitado) {
-    location.href = "invitado.html";
+    location.href = "/gestor-extraescolares/invitado.html";
     return;
   }
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    location.href = "login.html";
+    location.href = "/gestor-extraescolares/login.html";
     return;
   }
 
@@ -105,10 +105,10 @@ async function navegar() {
     .maybeSingle();
 
   switch (profile?.role) {
-    case "admin": location.href = "admin.html"; break;
-    case "monitor": location.href = "monitor.html"; break;
-    case "familiar": location.href = "familiar.html"; break;
-    default: location.href = "login.html";
+    case "admin": location.href = "/gestor-extraescolares/admin.html"; break;
+    case "monitor": location.href = "/gestor-extraescolares/monitor.html"; break;
+    case "familiar": location.href = "/gestor-extraescolares/familiar.html"; break;
+    default: location.href = "/gestor-extraescolares/login.html";
   }
 }
 
@@ -123,7 +123,7 @@ let profile = null;
 let puedeGestionar = false;
 
 if (!user && !esInvitado) {
-  location.href = "login.html";
+  location.href = "/gestor-extraescolares/login.html";
 }
 
 /* ================= PERFIL ================= */
@@ -137,7 +137,7 @@ if (user && !esInvitado) {
   if (perfilError) {
     console.error(perfilError);
     alert("No se pudo cargar el perfil");
-    location.href = "login.html";
+    location.href = "/gestor-extraescolares/login.html";
   }
 
   profile = perfilData;
@@ -270,12 +270,12 @@ document.getElementById("buscador").oninput = (e) => {
 
 /* ================= BOTONES ================= */
 document.getElementById("btnCrear").onclick = () => {
-  location.href = "actividades-form.html";
+  location.href = "/gestor-extraescolares/actividades-form.html";
 };
 
 document.getElementById("btnModificar").onclick = () => {
   if (seleccionada) {
-    location.href = `actividades-form.html?id=${seleccionada}`;
+    location.href = `/gestor-extraescolares/actividades-form.html?id=${seleccionada}`;
   }
 };
 

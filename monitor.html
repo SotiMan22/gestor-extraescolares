@@ -2,17 +2,17 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Panel Admin - AMPAgo</title>
-  <link rel="stylesheet" href="../style.css">
+  <title>Panel Monitor - AMPAgo</title>
+  <link rel="stylesheet" href="/gestor-extraescolares/style.css">
 </head>
 
 <body>
 
 <header>
-  Panel Administrador
+  Panel Monitor
 
   <div class="profile-menu">
-    <img src="../img/user.png" class="profile-icon" id="profileToggle">
+    <img src="/gestor-extraescolares/img/user.png" class="profile-icon" id="profileToggle">
 
     <div class="profile-dropdown" id="profileDropdown">
       <p id="profileEmail"></p>
@@ -24,24 +24,24 @@
 
 <div class="container">
 
-  <h2>Bienvenido, administrador</h2>
+  <h2>Bienvenido, monitor</h2>
 
-  <button onclick="location.href='register.html'">
-    Crear nueva cuenta
+  <button onclick="location.href='/gestor-extraescolares/mis-actividades.html'">
+    Mis actividades
   </button>
 
-  <button onclick="location.href='actividades.html'">
-    Gestionar actividades
+  <button onclick="location.href='/gestor-extraescolares/actividades.html'">
+    Actividades
   </button>
 
-  <button onclick="location.href='anuncios.html'">
+  <button onclick="location.href='/gestor-extraescolares/anuncios.html'">
     Tablón de anuncios
   </button>
 
 </div>
 
 <script type="module">
-import { supabase } from "../js/supabaseclientes.js";
+import { supabase } from "/gestor-extraescolares/js/supabaseclientes.js";
 
 /* ============================================================
    BLOQUEAR FLECHA ATRÁS
@@ -56,7 +56,7 @@ window.addEventListener("popstate", function () {
    ============================================================ */
 const { data: { user } } = await supabase.auth.getUser();
 if (!user) {
-  location.href = "login.html";
+  location.href = "/gestor-extraescolares/login.html";
 }
 
 /* ============================================================
@@ -69,16 +69,16 @@ const { data: profile, error } = await supabase
   .maybeSingle();
 
 if (error || !profile) {
-  alert("Error cargando perfil");
-  location.href = "login.html";
+  alert("No se pudo cargar el perfil");
+  location.href = "/gestor-extraescolares/login.html";
 }
 
 /* ============================================================
    CONTROL DE ACCESO
    ============================================================ */
-if (profile.role !== "admin") {
-  alert("Acceso restringido a administradores");
-  location.href = "login.html";
+if (profile.role !== "monitor") {
+  alert("Acceso restringido a monitores");
+  location.href = "/gestor-extraescolares/login.html";
 }
 
 /* ============================================================
@@ -106,9 +106,9 @@ document.addEventListener("click", (e) => {
    ============================================================ */
 document.getElementById("logoutBtn").onclick = async () => {
   await supabase.auth.signOut();
-  localStorage.clear();
   sessionStorage.clear();
-  window.location.replace("login.html");
+  localStorage.clear();
+  location.href = "/gestor-extraescolares/login.html";
 };
 </script>
 

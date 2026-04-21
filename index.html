@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>AMPAgo</title>
-  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="/gestor-extraescolares/style.css">
 </head>
 
 <body>
@@ -15,17 +15,17 @@
 </div>
 
 <script type="module">
-import { supabase } from "../js/supabaseclientes.js";
+import { supabase } from "/gestor-extraescolares/js/supabaseclientes.js";
 
 /* ============================================================
-   1. SESIÓN (UNIFICADO CON EL RESTO DEL PROYECTO)
+   1. SESIÓN
    ============================================================ */
 const { data: { user } } = await supabase.auth.getUser();
 
 const status = document.getElementById("status");
 
 if (!user) {
-  location.href = "login.html";
+  location.href = "/gestor-extraescolares/login.html";
 }
 
 /* ============================================================
@@ -41,7 +41,7 @@ if (error) {
   console.error(error);
   alert("Error cargando perfil");
   await supabase.auth.signOut();
-  location.href = "login.html";
+  location.href = "/gestor-extraescolares/login.html";
 }
 
 /* ============================================================
@@ -50,7 +50,7 @@ if (error) {
 if (!profile) {
   alert("Perfil no encontrado");
   await supabase.auth.signOut();
-  location.href = "login.html";
+  location.href = "/gestor-extraescolares/login.html";
 }
 
 /* ============================================================
@@ -60,21 +60,21 @@ status.textContent = "Redirigiendo...";
 
 switch (profile.role) {
   case "admin":
-    location.href = "admin.html";
+    location.href = "/gestor-extraescolares/admin.html";
     break;
 
   case "monitor":
-    location.href = "monitor.html";
+    location.href = "/gestor-extraescolares/monitor.html";
     break;
 
   case "familiar":
-    location.href = "familiar.html";
+    location.href = "/gestor-extraescolares/familiar.html";
     break;
 
   default:
     alert("Rol desconocido");
     await supabase.auth.signOut();
-    location.href = "login.html";
+    location.href = "/gestor-extraescolares/login.html";
 }
 </script>
 
