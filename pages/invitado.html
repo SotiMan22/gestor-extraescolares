@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Invitado - AMPAgo</title>
+  <link rel="stylesheet" href="/gestor-extraescolares/style.css">
+
+  <style>
+    header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 22px;
+      font-weight: bold;
+      padding: 15px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>Panel Invitado</header>
+
+<div class="container">
+
+  <h2>Bienvenido</h2>
+
+  <button onclick="location.href='/gestor-extraescolares/actividades.html'">
+    Actividades
+  </button>
+
+  <button onclick="location.href='/gestor-extraescolares/anuncios.html'">
+    Tablón de anuncios
+  </button>
+
+  <button onclick="salir()">
+    Salir
+  </button>
+
+</div>
+
+<script>
+/* ============================================================
+   BLOQUEAR FLECHA ATRÁS
+   ============================================================ */
+window.history.pushState(null, "", window.location.href);
+window.addEventListener("popstate", function () {
+  window.history.pushState(null, "", window.location.href);
+});
+
+/* ============================================================
+   CONTROL DE ACCESO
+   ============================================================ */
+const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+if (!esInvitado) {
+  location.href = "/gestor-extraescolares/login.html";
+}
+
+/* ============================================================
+   SALIR
+   ============================================================ */
+function salir() {
+  sessionStorage.removeItem("invitado");
+  location.href = "/gestor-extraescolares/login.html";
+}
+</script>
+
+</body>
+</html>

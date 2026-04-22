@@ -10,24 +10,32 @@ export async function requireRole(requiredRoles) {
   // comprobar invitado
   const invitado = localStorage.getItem("invitado");
 
-  // obtener usuario
-  const { data: { user } } = await supabase.auth.getUser();
+  // 1️⃣ Esperar a que Supabase cargue la sesión inicial
+  const { data: sessionData } = await supabase.auth.getSession();
+  let session = sessionData.session;
+  let user = session?.user;
 
-  // ❌ no hay usuario ni invitado
+  // 2️⃣ Si no hay usuario todavía, intentar obtenerlo
+  if (!user) {
+    const { data: userData } = await supabase.auth.getUser();
+    user = userData.user;
+  }
+
+  // 3️⃣ Si no hay usuario ni invitado → login
   if (!user && !invitado) {
-    location.href = "/pages/login.html";
+    location.href = "login.html";
     return;
   }
 
-  // 👤 si es invitado
+  // 4️⃣ Si es invitado
   if (invitado) {
     if (!requiredRoles.includes("invitado")) {
-      location.href = "/pages/login.html";
+      location.href = "login.html";
     }
     return;
   }
 
-  // 🔐 usuario logueado → obtener rol
+  // 5️⃣ Usuario logueado → obtener rol
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("role")
@@ -35,12 +43,12 @@ export async function requireRole(requiredRoles) {
     .single();
 
   if (error || !profile) {
-    location.href = "/pages/login.html";
+    location.href = "login.html";
     return;
   }
 
-  // ❌ rol no permitido
+  // 6️⃣ Rol no permitido
   if (!requiredRoles.includes(profile.role)) {
-    location.href = "/pages/login.html";
+    location.href = "login.html";
   }
 }

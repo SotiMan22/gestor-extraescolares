@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Inscribir en actividad - AMPAgo</title>
+  <link rel="stylesheet" href="/gestor-extraescolares/style.css">
+
+  <style>
+    .nav-container {
+      margin: 10px 0 20px 0;
+    }
+    .nav-btn {
+      background: #eee;
+      border: 1px solid #ccc;
+      padding: 6px 12px;
+      margin-right: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  Inscribir en actividad
+
+  <div class="profile-menu">
+    <img src="/gestor-extraescolares/img/user.png" class="profile-icon" id="profileToggle">
+
+    <div class="profile-dropdown" id="profileDropdown">
+      <p id="profileEmail"></p>
+      <p id="profileRole"></p>
+      <button id="logoutBtn">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Botones de navegación debajo del título -->
+  <div class="nav-container">
+    <button id="btnVolver" class="nav-btn">Volver</button>
+    <button id="btnInicio" class="nav-btn">Inicio</button>
+  </div>
+
+  <h2 id="tituloHijo">Cargando...</h2>
+
+  <h3>Actividades disponibles</h3>
+
+  <table id="tablaActividades">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Actividad</th>
+        <th>Día 1</th>
+        <th>Día 2</th>
+        <th>Monitor</th>
+      </tr>
+    </thead>
+    <tbody id="tbodyActividades">
+      <tr><td colspan="5">Cargando...</td></tr>
+    </tbody>
+  </table>
+
+  <button id="btnGuardar">Guardar inscripción</button>
+
+</div>
+
+<script type="module">
+import { supabase } from "/gestor-extraescolares/js/supabaseclientes.js";
+
+/* ================= NAVEGACIÓN UNIVERSAL ================= */
+async function navegar() {
+  const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+  if (esInvitado) {
+    location.href = "/gestor-extraescolares/invitado.html";
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    location.href = "/gestor-extraescolares/login.html";
+    return;
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  switch (profile?.role) {
+    case "admin": location.href = "/gestor-extraescolares/admin.html"; break;
+    case "monitor": location.href = "/gestor-extraescolares/monitor.html"; break;
+    case "familiar": location.href = "/gestor-extraescolares/familiar.html"; break;
+    default: location.href = "/gestor-extraescolares/login.html";
+  }
+}
+
+document.getElementById("btnVolver").onclick = navegar;
+document.getElementById("btnInicio").onclick = navegar;
+
+/* ================= SESIÓN ================= */
+const { data: { user } } = await supabase.auth.getUser();
+const esInvitado = sessionStorage.getItem("invitado") === "true";
+
+if (!user && !esInvitado) {
+  location.href = "/gestor-extraescolares/login.html";
+}
+
+/* ================= PERFIL ================= */
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("role")
+  .eq("id", user.id)
+  .maybeSingle();
+
+if (!profile || profile.role !== "familiar") {
+  alert("Solo los familiares pueden acceder");
+  location.href = "/gestor-extraescolares/login.html";
+}
+
+document.getElementById("profileEmail").textContent = user.email;
+document.getElementById("profileRole").textContent = "Rol: " + profile.role;
+
+/* ================= MENÚ PERFIL ================= */
+document.getElementById("profileToggle").onclick = () => {
+  const d = document.getElementById("profileDropdown");
+  d.style.display = d.style.display === "block" ? "none" : "block";
+};
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".profile-menu")) {
+    document.getElementById("profileDropdown").style.display = "none";
+  }
+});
+
+/* ================= LOGOUT ================= */
+document.getElementById("logoutBtn").onclick = async () => {
+  await supabase.auth.signOut();
+  location.href = "/gestor-extraescolares/login.html";
+};
+
+/* ================= OBTENER ID DEL HIJO ================= */
+const params = new URLSearchParams(location.search);
+const alumnoId = params.get("id");
+
+/* ================= CARGAR DATOS DEL HIJO ================= */
+const { data: hijo } = await supabase
+  .from("alumnos")
+  .select("*")
+  .eq("id", alumnoId)
+  .eq("familiar_id", user.id)
+  .maybeSingle();
+
+if (!hijo) {
+  alert("No puedes acceder a este alumno");
+  location.href = "/gestor-extraescolares/mis-hijos.html";
+}
+
+document.getElementById("tituloHijo").textContent =
+  `Inscribir a ${hijo.nombre} ${hijo.apellidos}`;
+
+/* ================= CARGAR ACTIVIDADES ================= */
+async function cargarActividades() {
+
+  const { data: actividades, error: errorAct } = await supabase
+    .from("actividades")
+    .select("*")
+    .order("nombre");
+
+  const { data: monitores, error: errorMon } = await supabase
+    .from("profiles")
+    .select("id, nombre, apellidos")
+    .eq("role", "monitor");
+
+  const tbody = document.getElementById("tbodyActividades");
+
+  if (errorAct || errorMon) {
+    console.error(errorAct || errorMon);
+    tbody.innerHTML = `<tr><td colspan="5">Error cargando actividades</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = actividades.map(a => {
+    const monitor = monitores.find(m => m.id === a.monitor_id);
+
+    return `
+      <tr>
+        <td><input type="checkbox" class="chkActividad" value="${a.id}"></td>
+        <td>${a.nombre}</td>
+        <td>${a.dia1 || "-"}</td>
+        <td>${a.dia2 || "-"}</td>
+        <td>${monitor ? monitor.nombre + " " + monitor.apellidos : "Sin monitor"}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+await cargarActividades();
+
+/* ================= GUARDAR INSCRIPCIÓN ================= */
+document.getElementById("btnGuardar").onclick = async () => {
+
+  const seleccionadas = [...document.querySelectorAll(".chkActividad:checked")]
+    .map(chk => chk.value);
+
+  if (seleccionadas.length === 0) {
+    alert("Selecciona al menos una actividad");
+    return;
+  }
+
+  for (const actividadId of seleccionadas) {
+    await supabase.from("inscripciones").insert({
+      alumno_id: alumnoId,
+      actividad_id: actividadId,
+      familiar_id: user.id,
+      fecha_inscripcion: new Date()
+    });
+  }
+
+  alert("Inscripción guardada correctamente");
+  location.href = "/gestor-extraescolares/mis-hijos.html";
+};
+</script>
+
+</body>
+</html>

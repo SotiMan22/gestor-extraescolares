@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Login - AMPAgo</title>
-  <link rel="stylesheet" href="/gestor-extraescolares/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -21,7 +21,6 @@
 
   <button id="btnInvitado">Entrar como invitado</button>
 
-  <!-- Botón de desarrollo oculto -->
   <button id="btnAutoLogin" style="display:none;">
     Entrar como admin (DEV)
   </button>
@@ -30,7 +29,9 @@
 
 <script type="module">
 console.log("SCRIPT CARGA OK");
-import { supabase } from "/gestor-extraescolares/js/supabaseclientes.js";
+
+// 👉 RUTA CORRECTA PARA GITHUB PAGES
+import { supabase } from "./js/supabaseclientes.js";
 
 document.addEventListener("DOMContentLoaded", () => {
 console.log("DOM listo");
@@ -73,18 +74,19 @@ document.getElementById("btnLogin").onclick = async () => {
       throw new Error("No se pudo cargar el perfil");
     }
 
+    // 👉 TODAS LAS RUTAS CORRECTAS
     switch (profile.role) {
       case "admin":
-        location.href = "/gestor-extraescolares/admin.html";
+        location.href = "admin.html";
         break;
       case "familiar":
-        location.href = "/gestor-extraescolares/familiar.html";
+        location.href = "familiar.html";
         break;
       case "monitor":
-        location.href = "/gestor-extraescolares/monitor.html";
+        location.href = "monitor.html";
         break;
       default:
-        location.href = "/gestor-extraescolares/invitado.html";
+        location.href = "invitado.html";
         break;
     }
 
@@ -101,7 +103,7 @@ document.getElementById("btnLogin").onclick = async () => {
    ============================================================ */
 document.getElementById("btnInvitado").onclick = () => {
   sessionStorage.setItem("invitado", "true");
-  location.href = "/gestor-extraescolares/invitado.html";
+  location.href = "invitado.html";
 };
 
 /* ============================================================
@@ -116,7 +118,7 @@ document.getElementById("btnAutoLogin").onclick = async () => {
 
     if (error) throw error;
 
-    location.href = "/gestor-extraescolares/admin.html";
+    location.href = "admin.html";
 
   } catch (e) {
     alert("Error: " + e.message);
